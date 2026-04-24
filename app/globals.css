@@ -1,0 +1,85 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --font-dm-sans: "DM Sans", "Segoe UI", Arial, sans-serif;
+  --font-playfair: "Playfair Display", Georgia, serif;
+  --sage: #b5c9b0;
+  --sage-light: #d9e8d6;
+  --sage-pale: #eef5ec;
+  --peach: #f2c4a0;
+  --peach-light: #fae4d0;
+  --peach-pale: #fdf3eb;
+  --sky: #a8cfe0;
+  --sky-light: #d0e9f4;
+  --butter: #f5e6a3;
+  --butter-light: #faf4d0;
+  --coral: #e8876a;
+  --ink: #2c3a2e;
+  --ink-mid: #4a5c4d;
+  --ink-soft: #7a907c;
+  --cream: #fdfcf9;
+  --border-soft: #dde8db;
+}
+
+@theme inline {
+  --color-sage: var(--sage);
+  --color-sage-light: var(--sage-light);
+  --color-sage-pale: var(--sage-pale);
+  --color-peach: var(--peach);
+  --color-peach-light: var(--peach-light);
+  --color-peach-pale: var(--peach-pale);
+  --color-sky-soft: var(--sky);
+  --color-sky-light: var(--sky-light);
+  --color-butter: var(--butter);
+  --color-butter-light: var(--butter-light);
+  --color-coral: var(--coral);
+  --color-ink: var(--ink);
+  --color-ink-mid: var(--ink-mid);
+  --color-ink-soft: var(--ink-soft);
+  --color-cream: var(--cream);
+  --color-border-soft: var(--border-soft);
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-playfair);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(232, 135, 106, 0.45);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
