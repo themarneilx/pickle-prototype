@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildInitialBookingState, STORAGE_KEY } from "./booking-data";
+import { buildInitialBookingState, STORAGE_KEY, STORAGE_VERSION } from "./booking-data";
 import { readBookingState, resetStoredBookingState, writeBookingState } from "./booking-storage";
 
 function createMemoryStorage(seed: Record<string, string> = {}) {
@@ -18,7 +18,7 @@ describe("booking storage", () => {
     const storage = createMemoryStorage();
 
     expect(readBookingState(storage)).toMatchObject({
-      version: 1,
+      version: STORAGE_VERSION,
       reservations: expect.arrayContaining([
         expect.objectContaining({ id: "reservation-001" }),
       ]),
