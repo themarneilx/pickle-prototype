@@ -29,4 +29,12 @@ describe("admin pricing mutations", () => {
 
     expect(updated.courts.find((court) => court.id === "court-agave")?.hourlyRate).toBe(0);
   });
+
+  it("normalizes invalid manually typed prices to zero", () => {
+    const state = buildInitialBookingState();
+
+    const updated = setPricingRulePrice(state, "pricing-weekday-evening", Number.NaN);
+
+    expect(updated.pricingRules.find((rule) => rule.id === "pricing-weekday-evening")?.price).toBe(0);
+  });
 });
