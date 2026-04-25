@@ -688,23 +688,14 @@ function CourtsSection({
               <div className="mt-1 text-sm text-ink-soft">
                 {rule.day} · {formatHour(rule.startHour)} - {formatHour(rule.endHour)}
               </div>
-              <label className="mt-4 grid gap-2 text-sm font-bold text-ink" htmlFor={`${rule.id}-price`}>
-                Rule price
-              </label>
-              <div className="flex items-center gap-2 rounded-lg border border-border-soft bg-sage-pale px-3 py-2">
-                <span className="font-serif text-xl font-black text-coral">₱</span>
-                <input
-                  aria-label={`${rule.label} price`}
-                  className="min-w-0 flex-1 bg-transparent font-serif text-3xl font-black text-coral outline-none"
-                  id={`${rule.id}-price`}
-                  inputMode="numeric"
-                  min={0}
-                  step={1}
-                  type="number"
-                  value={rule.price}
-                  onChange={(event) => updatePricingRulePrice(rule.id, Number(event.target.value))}
-                />
-              </div>
+              <PriceInput
+                accent="coral"
+                ariaLabel={`${rule.label} price`}
+                id={`${rule.id}-price`}
+                label="Rule price"
+                value={rule.price}
+                onChange={(price) => updatePricingRulePrice(rule.id, price)}
+              />
             </div>
           ))}
         </div>
@@ -725,23 +716,13 @@ function CourtCard({ court, updateCourtRate }: { court: Court; updateCourtRate: 
         </div>
         <StatusBadge label={court.type} />
       </div>
-      <label className="mt-5 grid gap-2 text-sm font-bold text-ink" htmlFor={`${court.id}-hourly-rate`}>
-        Hourly price
-      </label>
-      <div className="flex items-center gap-2 rounded-lg border border-border-soft bg-cream px-3 py-2">
-        <span className="font-serif text-xl font-black text-coral">₱</span>
-        <input
-          aria-label={`${court.shortName} hourly price`}
-          className="min-w-0 flex-1 bg-transparent font-serif text-3xl font-black text-ink outline-none"
-          id={`${court.id}-hourly-rate`}
-          inputMode="numeric"
-          min={0}
-          step={1}
-          type="number"
-          value={court.hourlyRate}
-          onChange={(event) => updateCourtRate(court.id, Number(event.target.value))}
-        />
-      </div>
+      <PriceInput
+        ariaLabel={`${court.shortName} hourly price`}
+        id={`${court.id}-hourly-rate`}
+        label="Hourly price"
+        value={court.hourlyRate}
+        onChange={(price) => updateCourtRate(court.id, price)}
+      />
       <div className="mt-3 flex flex-wrap gap-2">
         {court.amenities.map((amenity) => (
           <span key={amenity} className="rounded-full bg-sage-pale px-3 py-1 text-xs font-bold text-ink-mid">
@@ -750,6 +731,47 @@ function CourtCard({ court, updateCourtRate }: { court: Court; updateCourtRate: 
         ))}
       </div>
     </article>
+  );
+}
+
+function PriceInput({
+  accent = "ink",
+  ariaLabel,
+  id,
+  label,
+  onChange,
+  value,
+}: {
+  accent?: "coral" | "ink";
+  ariaLabel: string;
+  id: string;
+  label: string;
+  onChange: (price: number) => void;
+  value: number;
+}) {
+  const inputTone = accent === "coral" ? "text-coral" : "text-ink";
+  const surfaceTone = accent === "coral" ? "bg-sage-pale" : "bg-cream";
+
+  return (
+    <div className="mt-4">
+      <label className="grid gap-2 text-sm font-bold text-ink" htmlFor={id}>
+        {label}
+      </label>
+      <div className={`flex items-center gap-2 rounded-lg border border-border-soft px-3 py-2 ${surfaceTone}`}>
+        <span className="font-serif text-xl font-black text-coral">₱</span>
+        <input
+          aria-label={ariaLabel}
+          className={`min-w-0 flex-1 bg-transparent font-serif text-3xl font-black outline-none ${inputTone}`}
+          id={id}
+          inputMode="numeric"
+          min={0}
+          step={1}
+          type="number"
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+      </div>
+    </div>
   );
 }
 
