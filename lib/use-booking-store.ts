@@ -58,14 +58,19 @@ export function useBookingStore() {
     setState(resetStoredBookingState(window.localStorage));
   }, []);
 
+  const updateBookingState = useCallback((updater: (state: BookingState) => BookingState) => {
+    setState((current) => updater(current));
+  }, []);
+
   return useMemo(
     () => ({
       state,
       isHydrated,
       bookReservation,
       updateStatus,
+      updateBookingState,
       resetDemo,
     }),
-    [bookReservation, isHydrated, resetDemo, state, updateStatus],
+    [bookReservation, isHydrated, resetDemo, state, updateBookingState, updateStatus],
   );
 }
