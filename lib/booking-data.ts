@@ -1,7 +1,20 @@
-import type { AddOn, BookingState, Court, Customer, Reservation } from "./booking-types";
+import type {
+  AddOn,
+  AdminActivity,
+  AdminProfile,
+  BillingSummary,
+  BookingState,
+  Court,
+  Customer,
+  GalleryItem,
+  OperatingHour,
+  PricingRule,
+  PrivacyStatement,
+  Reservation,
+} from "./booking-types";
 
-export const STORAGE_VERSION = 1;
-export const STORAGE_KEY = "smashcourt-booking-state-v1";
+export const STORAGE_VERSION = 2;
+export const STORAGE_KEY = "smashcourt-booking-state-v2";
 
 export const courts: Court[] = [
   {
@@ -300,6 +313,164 @@ const reservations: Reservation[] = [
     total: 800,
     createdAt: "2026-04-23T08:45:00.000Z",
   },
+  {
+    id: "reservation-016",
+    courtId: "court-agave",
+    customerId: "customer-ana",
+    date: "2026-04-28",
+    startHour: 9,
+    durationHours: 1,
+    addOnIds: ["ball-tube"],
+    status: "booked",
+    paymentStatus: "paid",
+    total: 380,
+    createdAt: "2026-04-24T03:20:00.000Z",
+  },
+];
+
+const operatingHours: OperatingHour[] = [
+  { day: "monday", label: "Mon", openHour: 13, closeHour: 22, slotMinutes: 60 },
+  { day: "tuesday", label: "Tue", openHour: 13, closeHour: 17, slotMinutes: 60 },
+  { day: "wednesday", label: "Wed", openHour: 13, closeHour: 22, slotMinutes: 60 },
+  { day: "thursday", label: "Thu", openHour: 13, closeHour: 17, slotMinutes: 60 },
+  { day: "friday", label: "Fri", openHour: 13, closeHour: 22, slotMinutes: 60 },
+  { day: "saturday", label: "Sat", openHour: 8, closeHour: 22, slotMinutes: 60 },
+  { day: "sunday", label: "Sun", openHour: 8, closeHour: 22, slotMinutes: 60 },
+];
+
+const pricingRules: PricingRule[] = [
+  {
+    id: "pricing-weekday-evening",
+    day: "monday",
+    label: "Weekday evening",
+    startHour: 13,
+    endHour: 22,
+    price: 700,
+    courtIds: ["court-agave", "court-bandera", "court-cebu", "court-datu"],
+  },
+  {
+    id: "pricing-tuesday-short",
+    day: "tuesday",
+    label: "Short day",
+    startHour: 13,
+    endHour: 17,
+    price: 700,
+    courtIds: ["court-agave", "court-bandera"],
+  },
+  {
+    id: "pricing-weekend",
+    day: "saturday",
+    label: "Weekend day pass",
+    startHour: 8,
+    endHour: 17,
+    price: 850,
+    courtIds: ["court-cebu", "court-datu"],
+  },
+];
+
+const privacyStatements: PrivacyStatement[] = [
+  {
+    id: "privacy-main",
+    title: "Website privacy notice",
+    channel: "Website",
+    status: "published",
+    version: "v2.1",
+    updatedAt: "2026-04-18",
+  },
+  {
+    id: "privacy-booking",
+    title: "Booking consent copy",
+    channel: "Booking Form",
+    status: "review",
+    version: "v1.7",
+    updatedAt: "2026-04-21",
+  },
+  {
+    id: "privacy-email",
+    title: "Email marketing consent",
+    channel: "Email",
+    status: "draft",
+    version: "v1.2",
+    updatedAt: "2026-04-22",
+  },
+];
+
+const galleryItems: GalleryItem[] = [
+  {
+    id: "gallery-agave",
+    title: "Agave evening session",
+    category: "Court",
+    status: "published",
+    accent: "sage",
+    updatedAt: "2026-04-18",
+  },
+  {
+    id: "gallery-clinic",
+    title: "Saturday beginner clinic",
+    category: "Event",
+    status: "published",
+    accent: "peach",
+    updatedAt: "2026-04-20",
+  },
+  {
+    id: "gallery-lockers",
+    title: "Locker and shower area",
+    category: "Facility",
+    status: "draft",
+    accent: "sky",
+    updatedAt: "2026-04-22",
+  },
+];
+
+const billingSummary: BillingSummary = {
+  plan: "SmashCourt Pro",
+  nextInvoiceDate: "2026-05-01",
+  paymentMethod: "Visa ending 4242",
+  monthlyTotal: 2490,
+  invoices: [
+    {
+      id: "INV-1042",
+      date: "2026-04-01",
+      description: "Booking platform subscription",
+      amount: 2490,
+      status: "paid",
+    },
+    {
+      id: "INV-1043",
+      date: "2026-05-01",
+      description: "Upcoming monthly subscription",
+      amount: 2490,
+      status: "upcoming",
+    },
+  ],
+};
+
+const adminProfile: AdminProfile = {
+  companyName: "SmashCourt Pickleball",
+  adminName: "Cala Puerto",
+  adminEmail: "admin@smashcourt.example",
+  role: "Company Admin",
+};
+
+const adminActivity: AdminActivity[] = [
+  {
+    id: "activity-001",
+    label: "Pricing updated",
+    detail: "Weekend indoor courts set to ₱850.",
+    createdAt: "2026-04-24T06:30:00.000Z",
+  },
+  {
+    id: "activity-002",
+    label: "Booking checked in",
+    detail: "Ana Reyes checked in for Court 1 - Agave.",
+    createdAt: "2026-04-24T00:05:00.000Z",
+  },
+  {
+    id: "activity-003",
+    label: "Gallery draft added",
+    detail: "Locker and shower area added as a draft item.",
+    createdAt: "2026-04-23T12:20:00.000Z",
+  },
 ];
 
 export function buildInitialBookingState(): BookingState {
@@ -317,6 +488,13 @@ export function buildInitialBookingState(): BookingState {
         reason: "Floor maintenance",
       },
     ],
+    operatingHours: structuredClone(operatingHours),
+    pricingRules: structuredClone(pricingRules),
+    privacyStatements: structuredClone(privacyStatements),
+    galleryItems: structuredClone(galleryItems),
+    billingSummary: structuredClone(billingSummary),
+    adminProfile: structuredClone(adminProfile),
+    adminActivity: structuredClone(adminActivity),
     openHour: 6,
     closeHour: 22,
   };
