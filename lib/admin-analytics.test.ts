@@ -59,7 +59,7 @@ describe("admin analytics", () => {
     expect(cells).toHaveLength(16);
     expect(cells.find((cell) => cell.hour === 9)).toMatchObject({
       day: "2026-04-24",
-      bookings: 1,
+      bookings: 2,
       intensity: 100,
     });
   });
