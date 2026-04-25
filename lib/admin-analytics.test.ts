@@ -4,6 +4,7 @@ import { buildInitialBookingState } from "./booking-data";
 import {
   getAdminSummary,
   getCourtUtilizationRanking,
+  getHourlyHeatmap,
   getHourlyDemandAnalysis,
   getRevenueSeries,
 } from "./admin-analytics";
@@ -49,5 +50,17 @@ describe("admin analytics", () => {
       { date: "2026-04-25", revenue: 720, bookings: 2 },
       { date: "2026-04-26", revenue: 510, bookings: 1 },
     ]);
+  });
+
+  it("creates hourly heatmap cells for report demand charts", () => {
+    const state = buildInitialBookingState();
+    const cells = getHourlyHeatmap(state, "2026-04-24", "2026-04-24");
+
+    expect(cells).toHaveLength(16);
+    expect(cells.find((cell) => cell.hour === 9)).toMatchObject({
+      day: "2026-04-24",
+      bookings: 1,
+      intensity: 100,
+    });
   });
 });
