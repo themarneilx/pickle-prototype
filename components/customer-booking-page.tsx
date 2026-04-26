@@ -1,15 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarDays, Check, RotateCcw, Sparkles, X } from "lucide-react";
+import { CalendarDays, Check, CreditCard, RotateCcw, Smartphone, Sparkles, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { FeatureStrip } from "./feature-strip";
 import { HeroCarousel } from "./hero-carousel";
 import { SiteNav } from "./site-nav";
 import { DEMO_TODAY, formatLongDate, formatShortDate, fromDateKey, toDateKey } from "@/lib/demo-date";
-import { formatHour, getAvailabilityForDate, getSlotStatus } from "@/lib/booking-logic";
+import {
+  formatHour,
+  getAvailabilityForDate,
+  getBookingPaymentMethodLabel,
+  getMockPaymentStatusLabel,
+  getSlotStatus,
+  formatReceiptDateTime,
+} from "@/lib/booking-logic";
 import { useBookingStore } from "@/lib/use-booking-store";
-import type { Court, CourtId, Reservation, SkillLevel } from "@/lib/booking-types";
+import type { Court, CourtId, PaymentMethod, Reservation, SkillLevel } from "@/lib/booking-types";
 
 const monthNames = [
   "January",
@@ -33,6 +41,21 @@ const themeClasses: Record<Court["theme"], string> = {
   butter: "bg-butter text-ink",
 };
 
+const paymentMethods: Array<{ id: PaymentMethod; label: string; description: string; icon: LucideIcon }> = [
+  {
+    id: "credit-debit-card",
+    label: "Credit/Debit Card",
+    description: "Mock Visa, Mastercard, or bank card payment.",
+    icon: CreditCard,
+  },
+  {
+    id: "gcash",
+    label: "GCash",
+    description: "Mock mobile wallet payment for GCash users.",
+    icon: Smartphone,
+  },
+];
+
 type SelectedSlot = {
   date: string;
   courtId: CourtId;
@@ -46,6 +69,7 @@ type BookingForm = {
   skillLevel: SkillLevel;
   durationHours: number;
   addOnIds: string[];
+  paymentMethod: PaymentMethod;
   note: string;
 };
 
@@ -56,6 +80,7 @@ const emptyForm: BookingForm = {
   skillLevel: "intermediate",
   durationHours: 1,
   addOnIds: [],
+  paymentMethod: "credit-debit-card",
   note: "",
 };
 
@@ -130,6 +155,7 @@ export function CustomerBookingPage() {
       startHour: selectedSlot.startHour,
       durationHours: form.durationHours,
       addOnIds: form.addOnIds,
+      paymentMethod: form.paymentMethod,
       note: form.note.trim() || undefined,
     });
 
@@ -260,33 +286,37 @@ export function CustomerBookingPage() {
                 </div>
               </div>
 
-              {selectedSlot && selectedCourt ? (
-                <ReservationPanel
-                  canBook={canBookDuration(selectedSlot, form.durationHours)}
-                  court={selectedCourt}
-                  form={form}
-                  selectedDate={selectedSlot.date}
-                  selectedHour={selectedSlot.startHour}
-                  setForm={setForm}
-                  total={total}
-                  addOns={state.addOns}
-                  onToggleAddOn={toggleAddOn}
-                  onClear={() => setSelectedSlot(null)}
-                  onConfirm={confirmBooking}
-                />
-              ) : null}
-
               <div className="grid gap-5">
-                {state.courts.map((court) => (
-                  <CourtAvailability
-                    key={court.id}
-                    court={court}
-                    selectedDate={selectedDate}
-                    selectedSlot={selectedSlot}
-                    state={state}
-                    onSelect={(slot) => setSelectedSlot(slot)}
-                  />
-                ))}
+                {state.courts.map((court) => {
+                  const reservationPanel =
+                    selectedSlot?.courtId === court.id && selectedCourt ? (
+                      <ReservationPanel
+                        canBook={canBookDuration(selectedSlot, form.durationHours)}
+                        court={court}
+                        form={form}
+                        selectedDate={selectedSlot.date}
+                        selectedHour={selectedSlot.startHour}
+                        setForm={setForm}
+                        total={total}
+                        addOns={state.addOns}
+                        onToggleAddOn={toggleAddOn}
+                        onClear={() => setSelectedSlot(null)}
+                        onConfirm={confirmBooking}
+                      />
+                    ) : null;
+
+                  return (
+                    <CourtAvailability
+                      key={court.id}
+                      court={court}
+                      reservationPanel={reservationPanel}
+                      selectedDate={selectedDate}
+                      selectedSlot={selectedSlot}
+                      state={state}
+                      onSelect={(slot) => setSelectedSlot(slot)}
+                    />
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -303,6 +333,7 @@ export function CustomerBookingPage() {
 
       {confirmedReservation ? (
         <ConfirmationModal
+          addOns={state.addOns}
           reservation={confirmedReservation}
           court={state.courts.find((court) => court.id === confirmedReservation.courtId)}
           onClose={() => setConfirmedReservation(null)}
@@ -321,14 +352,16 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function CourtAvailability({
+export function CourtAvailability({
   court,
+  reservationPanel,
   selectedDate,
   selectedSlot,
   state,
   onSelect,
 }: {
   court: Court;
+  reservationPanel?: React.ReactNode;
   selectedDate: string;
   selectedSlot: SelectedSlot | null;
   state: ReturnType<typeof useBookingStore>["state"];
@@ -399,6 +432,8 @@ function CourtAvailability({
           );
         })}
       </div>
+
+      {reservationPanel ? <div className="mt-5">{reservationPanel}</div> : null}
     </article>
   );
 }
@@ -549,6 +584,39 @@ function ReservationPanel({
         </div>
       </div>
 
+      <div className="mt-5">
+        <div className="mb-3 text-sm font-bold text-ink">Payment method</div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {paymentMethods.map((method) => {
+            const Icon = method.icon;
+            const checked = form.paymentMethod === method.id;
+            return (
+              <label
+                key={method.id}
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border bg-white p-3 transition ${
+                  checked ? "border-coral" : "border-border-soft hover:border-sage"
+                }`}
+              >
+                <input
+                  className="mt-1 h-4 w-4 accent-coral"
+                  type="radio"
+                  name="payment-method"
+                  checked={checked}
+                  onChange={() => setForm((current) => ({ ...current, paymentMethod: method.id }))}
+                />
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sage-pale text-ink">
+                  <Icon size={18} aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-sm font-bold text-ink">{method.label}</span>
+                  <span className="mt-1 block text-sm text-ink-soft">{method.description}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="mt-5 flex flex-col justify-between gap-4 border-t border-coral/20 pt-5 md:flex-row md:items-center">
         <div>
           <div className="text-sm font-bold text-ink-soft">Total</div>
@@ -569,34 +637,70 @@ function ReservationPanel({
   );
 }
 
-function ConfirmationModal({
+export function ConfirmationModal({
+  addOns,
   reservation,
   court,
   onClose,
 }: {
+  addOns: ReturnType<typeof useBookingStore>["state"]["addOns"];
   reservation: Reservation;
   court: Court | undefined;
   onClose: () => void;
 }) {
+  const selectedAddOns = addOns.filter((addOn) => reservation.addOnIds.includes(addOn.id));
+
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center bg-ink/55 px-5 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-lg bg-white p-7 text-center shadow-[0_20px_70px_rgba(0,0,0,0.24)]">
+      <div className="w-full max-w-lg rounded-lg bg-white p-7 text-center shadow-[0_20px_70px_rgba(0,0,0,0.24)]">
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-sage-pale text-coral">
           <Check size={32} aria-hidden="true" />
         </div>
-        <h2 className="mt-5 font-serif text-3xl font-black text-ink">You&apos;re all set.</h2>
+        <h2 className="mt-5 font-serif text-3xl font-black text-ink">Reservation confirmed</h2>
         <p className="mt-4 leading-7 text-ink-soft">
-          Your reservation for <strong className="text-ink">{court?.name ?? "your court"}</strong> on{" "}
+          Your reservation is confirmed for <strong className="text-ink">{court?.name ?? "your court"}</strong> on{" "}
           <strong className="text-ink">{formatLongDate(reservation.date)}</strong> at{" "}
-          <strong className="text-ink">{formatHour(reservation.startHour)}</strong> has been confirmed.
+          <strong className="text-ink">{formatHour(reservation.startHour)}</strong>.
         </p>
         <div className="mt-5 rounded-lg bg-sage-pale p-4 text-left text-sm text-ink-mid">
           <div className="flex justify-between">
+            <span>Payment status</span>
+            <strong className="text-ink">{getMockPaymentStatusLabel(reservation.paymentStatus)}</strong>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <span>Invoice</span>
+            <strong className="text-ink">{reservation.invoiceNumber ?? "Not issued"}</strong>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <span>Payment reference</span>
+            <strong className="text-ink">{reservation.paymentReference ?? "Not issued"}</strong>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <span>Paid at</span>
+            <strong className="text-ink">{formatReceiptDateTime(reservation.paidAt)}</strong>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <span>Payment method</span>
+            <strong className="text-ink">{getBookingPaymentMethodLabel(reservation.paymentMethod)}</strong>
+          </div>
+          <div className="mt-2 flex justify-between">
             <span>Reservation</span>
             <strong className="text-ink">{reservation.id.slice(-8)}</strong>
           </div>
           <div className="mt-2 flex justify-between">
-            <span>Total</span>
+            <span>Time</span>
+            <strong className="text-ink">
+              {formatHour(reservation.startHour)} - {formatHour(reservation.startHour + reservation.durationHours)}
+            </strong>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <span>Add-ons</span>
+            <strong className="text-ink">
+              {selectedAddOns.length ? selectedAddOns.map((addOn) => addOn.name).join(", ") : "None"}
+            </strong>
+          </div>
+          <div className="mt-3 flex justify-between border-t border-border-soft pt-3">
+            <span>Total paid</span>
             <strong className="text-ink">₱{reservation.total.toLocaleString()}</strong>
           </div>
         </div>

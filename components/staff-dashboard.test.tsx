@@ -39,6 +39,25 @@ describe("StaffDashboard", () => {
     expect(html).toContain("Slow window");
   });
 
+  it("renders report trends as bar graphs", () => {
+    const html = renderToStaticMarkup(<StaffDashboard initialSection="reports" />);
+
+    expect(html).toContain('aria-label="Revenue bar graph"');
+    expect(html).toContain('aria-label="Bookings bar graph"');
+    expect(html).not.toContain('aria-label="Trend chart"');
+  });
+
+  it("shows the mock payment method in booking details", () => {
+    const html = renderToStaticMarkup(<StaffDashboard initialSelectedReservationId="reservation-001" />);
+
+    expect(html).toContain("Payment method");
+    expect(html).toContain("Credit/Debit Card");
+    expect(html).toContain("Payment confirmed");
+    expect(html).toContain("Invoice");
+    expect(html).toContain("INV-20260424-001");
+    expect(html).toContain("PAY-20260424-001");
+  });
+
   it("renders direct manual pricing fields in the courts section", () => {
     const html = renderToStaticMarkup(<StaffDashboard initialSection="courts" />);
 

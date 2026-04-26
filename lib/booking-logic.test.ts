@@ -51,6 +51,7 @@ describe("booking logic", () => {
       startHour: 6,
       durationHours: 1,
       addOnIds: ["paddle-rental", "ball-tube"],
+      paymentMethod: "credit-debit-card",
     });
 
     const addOnTotal = addOns
@@ -64,9 +65,12 @@ describe("booking logic", () => {
       startHour: 6,
       durationHours: 1,
       status: "booked",
-      paymentStatus: "unpaid",
+      paymentStatus: "paid",
       total: 300 + addOnTotal,
     });
+    expect(result.reservation.paidAt).toMatch(/^20\d{2}-\d{2}-\d{2}T/);
+    expect(result.reservation.invoiceNumber).toMatch(/^INV-20260424-/);
+    expect(result.reservation.paymentReference).toMatch(/^PAY-20260424-/);
     expect(result.state.reservations).toHaveLength(state.reservations.length + 1);
     expect(
       getSlotStatus(result.state, {
@@ -75,6 +79,30 @@ describe("booking logic", () => {
         startHour: 6,
       }),
     ).toBe("booked");
+  });
+
+  it("stores the selected mock payment method on new reservations", () => {
+    const state = buildInitialBookingState();
+    const result = createReservation(state, {
+      id: "reservation-payment-method",
+      courtId: "court-bandera",
+      customer: {
+        name: "Mara Santos",
+        phone: "0917 555 1000",
+        email: "mara-payment@example.com",
+        skillLevel: "intermediate",
+      },
+      date: "2026-04-24",
+      startHour: 6,
+      durationHours: 1,
+      addOnIds: [],
+      paymentMethod: "gcash",
+    });
+
+    expect(result.reservation.paymentMethod).toBe("gcash");
+    expect(result.reservation.paymentStatus).toBe("paid");
+    expect(result.reservation.invoiceNumber).toMatch(/^INV-20260424-/);
+    expect(result.reservation.paymentReference).toMatch(/^PAY-20260424-/);
   });
 
   it("rejects reservations for unavailable slots", () => {
@@ -94,6 +122,7 @@ describe("booking logic", () => {
         startHour: 8,
         durationHours: 1,
         addOnIds: [],
+        paymentMethod: "gcash",
       }),
     ).toThrow("Slot is not available");
   });

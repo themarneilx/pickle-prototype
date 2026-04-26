@@ -34,6 +34,9 @@ import {
 import { setCourtHourlyRate, setPricingRulePrice } from "@/lib/admin-mutations";
 import {
   formatHour,
+  formatReceiptDateTime,
+  getBookingPaymentMethodLabel,
+  getMockPaymentStatusLabel,
   getPaymentLabel,
   getReservationCourt,
   getReservationCustomer,
@@ -64,6 +67,7 @@ type AdminSection =
 
 type StaffDashboardProps = {
   initialSection?: AdminSection;
+  initialSelectedReservationId?: string | null;
 };
 
 type NavItem = {
@@ -102,12 +106,12 @@ const galleryTone: Record<GalleryItem["accent"], string> = {
   butter: "from-butter/90 to-butter-light",
 };
 
-export function StaffDashboard({ initialSection = "bookings" }: StaffDashboardProps) {
+export function StaffDashboard({ initialSection = "bookings", initialSelectedReservationId = null }: StaffDashboardProps) {
   const { state, updateStatus, updateBookingState, resetDemo } = useBookingStore();
   const [activeSection, setActiveSection] = useState<AdminSection>(initialSection);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(DEMO_TODAY);
-  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(initialSelectedReservationId);
   const [bookingFilters, setBookingFilters] = useState({
     reference: "",
     date: "",
@@ -518,6 +522,11 @@ function BookingRow({
           <Detail label="Contact" value={`${customer?.email ?? "No email"} · ${customer?.phone ?? "No phone"}`} />
           <Detail label="Total" value={`₱${reservation.total.toLocaleString()}`} />
           <Detail label="Add-ons" value={reservation.addOnIds.length ? reservation.addOnIds.join(", ") : "None"} />
+          <Detail label="Payment status" value={getMockPaymentStatusLabel(reservation.paymentStatus)} />
+          <Detail label="Payment method" value={getBookingPaymentMethodLabel(reservation.paymentMethod)} />
+          <Detail label="Invoice" value={reservation.invoiceNumber ?? "Not issued"} />
+          <Detail label="Payment reference" value={reservation.paymentReference ?? "Not issued"} />
+          <Detail label="Paid at" value={formatReceiptDateTime(reservation.paidAt)} />
           <AdminSelect
             label="Status"
             value={reservation.status}
@@ -823,10 +832,19 @@ function ReportsSection({
       </div>
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="Revenue Over Time">
-          <LineChart data={revenueSeries.map((point) => point.revenue)} labels={revenueSeries.map((point) => point.date.slice(5))} />
+          <BarGraph
+            ariaLabel="Revenue bar graph"
+            data={revenueSeries.map((point) => point.revenue)}
+            labels={revenueSeries.map((point) => point.date.slice(5))}
+            valuePrefix="₱"
+          />
         </Panel>
         <Panel title="Bookings Count Over Time">
-          <LineChart data={revenueSeries.map((point) => point.bookings)} labels={revenueSeries.map((point) => point.date.slice(5))} />
+          <BarGraph
+            ariaLabel="Bookings bar graph"
+            data={revenueSeries.map((point) => point.bookings)}
+            labels={revenueSeries.map((point) => point.date.slice(5))}
+          />
         </Panel>
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
@@ -1094,25 +1112,46 @@ function Insight({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LineChart({ data, labels }: { data: number[]; labels: string[] }) {
+function BarGraph({
+  ariaLabel,
+  data,
+  labels,
+  valuePrefix = "",
+}: {
+  ariaLabel: string;
+  data: number[];
+  labels: string[];
+  valuePrefix?: string;
+}) {
   const max = Math.max(...data, 1);
-  const points = data.map((value, index) => {
-    const x = data.length === 1 ? 50 : (index / (data.length - 1)) * 100;
-    const y = 88 - (value / max) * 76;
-    return `${x},${y}`;
-  });
 
   return (
     <div className="h-64 rounded-lg bg-cream p-4">
-      <svg className="h-full w-full overflow-visible" role="img" aria-label="Trend chart" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <polyline fill="none" points={points.join(" ")} stroke="var(--coral)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <div
+        className="grid h-48 items-end gap-2"
+        role="img"
+        aria-label={ariaLabel}
+        style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
+      >
         {data.map((value, index) => {
-          const [x, y] = points[index].split(",").map(Number);
-          return <circle key={`${labels[index]}-${value}`} cx={x} cy={y} fill="var(--ink)" r="1.8" />;
+          const height = value > 0 ? Math.max(10, Math.round((value / max) * 100)) : 3;
+          return (
+            <div key={`${labels[index]}-${value}`} className="flex h-full flex-col justify-end gap-2">
+              <div
+                className="rounded-t-md bg-coral shadow-sm"
+                style={{ height: `${height}%` }}
+                title={`${labels[index]}: ${valuePrefix}${value.toLocaleString()}`}
+              />
+              <div className="text-center text-[11px] font-bold text-ink">{valuePrefix}{value.toLocaleString()}</div>
+            </div>
+          );
         })}
-      </svg>
-      <div className="mt-2 grid grid-cols-3 gap-2 text-xs font-bold text-ink-soft md:grid-cols-5">
-        {labels.slice(0, 5).map((label) => (
+      </div>
+      <div
+        className="mt-3 grid gap-2 text-center text-xs font-bold text-ink-soft"
+        style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}
+      >
+        {labels.map((label) => (
           <span key={label}>{label}</span>
         ))}
       </div>

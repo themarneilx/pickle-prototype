@@ -4,6 +4,8 @@ export type ReservationStatus = "booked" | "checked-in" | "completed" | "cancell
 
 export type PaymentStatus = "unpaid" | "paid" | "refunded";
 
+export type PaymentMethod = "credit-debit-card" | "gcash";
+
 export type SkillLevel = "beginner" | "intermediate" | "advanced" | "open-play";
 
 export type SlotStatus = "open" | "booked" | "closed";
@@ -64,8 +66,12 @@ export type Reservation = {
   startHour: number;
   durationHours: number;
   addOnIds: string[];
+  paymentMethod: PaymentMethod;
   status: ReservationStatus;
   paymentStatus: PaymentStatus;
+  invoiceNumber?: string;
+  paymentReference?: string;
+  paidAt?: string;
   total: number;
   createdAt: string;
   note?: string;
@@ -152,6 +158,7 @@ export type ReservationInput = {
   startHour: number;
   durationHours: number;
   addOnIds: string[];
+  paymentMethod: PaymentMethod;
   note?: string;
 };
 

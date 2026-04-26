@@ -2,6 +2,7 @@ import type {
   BookingState,
   CourtId,
   DateAvailability,
+  PaymentMethod,
   PaymentStatus,
   Reservation,
   ReservationInput,
@@ -16,6 +17,17 @@ type SlotQuery = {
 };
 
 const unavailableStatuses: ReservationStatus[] = ["booked", "checked-in", "completed", "no-show"];
+
+const bookingPaymentMethodLabels: Record<PaymentMethod, string> = {
+  "credit-debit-card": "Credit/Debit Card",
+  gcash: "GCash",
+};
+
+const mockPaymentStatusLabels: Record<PaymentStatus, string> = {
+  unpaid: "Payment pending",
+  paid: "Payment confirmed",
+  refunded: "Payment refunded",
+};
 
 export function formatHour(hour: number): string {
   const period = hour < 12 ? "AM" : "PM";
@@ -108,6 +120,9 @@ export function createReservation(
     const addOn = state.addOns.find((item) => item.id === addOnId);
     return sum + (addOn?.price ?? 0);
   }, 0);
+  const createdAt = new Date().toISOString();
+  const receiptSequence = formatReceiptSequence(state.reservations.length + 1);
+  const receiptDate = input.date.replaceAll("-", "");
   const reservation: Reservation = {
     id: input.id ?? `reservation-${Date.now()}`,
     courtId: input.courtId,
@@ -116,10 +131,14 @@ export function createReservation(
     startHour: input.startHour,
     durationHours: input.durationHours,
     addOnIds: [...input.addOnIds],
+    paymentMethod: input.paymentMethod,
     status: "booked",
-    paymentStatus: "unpaid",
+    paymentStatus: "paid",
+    invoiceNumber: `INV-${receiptDate}-${receiptSequence}`,
+    paymentReference: `PAY-${receiptDate}-${receiptSequence}`,
+    paidAt: createdAt,
     total: court.hourlyRate * input.durationHours + addOnTotal,
-    createdAt: new Date().toISOString(),
+    createdAt,
     note: input.note,
   };
 
@@ -175,6 +194,32 @@ export function getStatusLabel(status: ReservationStatus): string {
 
 export function getPaymentLabel(status: PaymentStatus): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+export function getBookingPaymentMethodLabel(method: PaymentMethod | undefined): string {
+  return method ? bookingPaymentMethodLabels[method] : "Not selected";
+}
+
+export function getMockPaymentStatusLabel(status: PaymentStatus): string {
+  return mockPaymentStatusLabels[status];
+}
+
+export function formatReceiptDateTime(value: string | undefined): string {
+  if (!value) {
+    return "Not recorded";
+  }
+
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatReceiptSequence(sequence: number): string {
+  return String(sequence).padStart(3, "0");
 }
 
 function slugify(value: string): string {

@@ -32,20 +32,14 @@ export function useBookingStore() {
     }
   }, [isHydrated, state]);
 
-  const bookReservation = useCallback((input: ReservationInput): Reservation => {
-    let createdReservation: Reservation | undefined;
-    setState((current) => {
-      const result = createReservation(current, input);
-      createdReservation = result.reservation;
-      return result.state;
-    });
-
-    if (!createdReservation) {
-      throw new Error("Reservation could not be created");
-    }
-
-    return createdReservation;
-  }, []);
+  const bookReservation = useCallback(
+    (input: ReservationInput): Reservation => {
+      const result = createReservation(state, input);
+      setState(result.state);
+      return result.reservation;
+    },
+    [state],
+  );
 
   const updateStatus = useCallback(
     (reservationId: string, patch: Partial<{ status: ReservationStatus; paymentStatus: PaymentStatus }>) => {

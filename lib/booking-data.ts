@@ -13,8 +13,8 @@ import type {
   Reservation,
 } from "./booking-types";
 
-export const STORAGE_VERSION = 2;
-export const STORAGE_KEY = "smashcourt-booking-state-v2";
+export const STORAGE_VERSION = 4;
+export const STORAGE_KEY = "smashcourt-booking-state-v4";
 
 export const courts: Court[] = [
   {
@@ -126,6 +126,7 @@ const reservations: Reservation[] = [
     startHour: 8,
     durationHours: 1,
     addOnIds: ["paddle-rental"],
+    paymentMethod: "credit-debit-card",
     status: "checked-in",
     paymentStatus: "paid",
     total: 420,
@@ -139,6 +140,7 @@ const reservations: Reservation[] = [
     startHour: 9,
     durationHours: 1,
     addOnIds: ["ball-tube"],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "paid",
     total: 380,
@@ -152,6 +154,7 @@ const reservations: Reservation[] = [
     startHour: 14,
     durationHours: 1,
     addOnIds: [],
+    paymentMethod: "credit-debit-card",
     status: "booked",
     paymentStatus: "unpaid",
     total: 300,
@@ -165,6 +168,7 @@ const reservations: Reservation[] = [
     startHour: 10,
     durationHours: 1,
     addOnIds: ["locker"],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "paid",
     total: 360,
@@ -178,6 +182,7 @@ const reservations: Reservation[] = [
     startHour: 11,
     durationHours: 1,
     addOnIds: [],
+    paymentMethod: "credit-debit-card",
     status: "booked",
     paymentStatus: "paid",
     total: 300,
@@ -191,6 +196,7 @@ const reservations: Reservation[] = [
     startHour: 12,
     durationHours: 1,
     addOnIds: [],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "unpaid",
     total: 300,
@@ -204,6 +210,7 @@ const reservations: Reservation[] = [
     startHour: 7,
     durationHours: 1,
     addOnIds: ["coach-warmup"],
+    paymentMethod: "credit-debit-card",
     status: "completed",
     paymentStatus: "paid",
     total: 800,
@@ -217,6 +224,7 @@ const reservations: Reservation[] = [
     startHour: 13,
     durationHours: 1,
     addOnIds: [],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "paid",
     total: 450,
@@ -230,6 +238,7 @@ const reservations: Reservation[] = [
     startHour: 15,
     durationHours: 1,
     addOnIds: ["locker"],
+    paymentMethod: "credit-debit-card",
     status: "booked",
     paymentStatus: "paid",
     total: 510,
@@ -243,6 +252,7 @@ const reservations: Reservation[] = [
     startHour: 9,
     durationHours: 1,
     addOnIds: [],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "unpaid",
     total: 450,
@@ -256,6 +266,7 @@ const reservations: Reservation[] = [
     startHour: 16,
     durationHours: 1,
     addOnIds: ["ball-tube"],
+    paymentMethod: "credit-debit-card",
     status: "booked",
     paymentStatus: "paid",
     total: 530,
@@ -269,6 +280,7 @@ const reservations: Reservation[] = [
     startHour: 7,
     durationHours: 1,
     addOnIds: [],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "paid",
     total: 300,
@@ -282,6 +294,7 @@ const reservations: Reservation[] = [
     startHour: 17,
     durationHours: 1,
     addOnIds: ["paddle-rental"],
+    paymentMethod: "credit-debit-card",
     status: "booked",
     paymentStatus: "paid",
     total: 420,
@@ -295,6 +308,7 @@ const reservations: Reservation[] = [
     startHour: 18,
     durationHours: 1,
     addOnIds: ["locker"],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "unpaid",
     total: 510,
@@ -308,6 +322,7 @@ const reservations: Reservation[] = [
     startHour: 12,
     durationHours: 1,
     addOnIds: ["coach-warmup"],
+    paymentMethod: "credit-debit-card",
     status: "booked",
     paymentStatus: "paid",
     total: 800,
@@ -321,6 +336,7 @@ const reservations: Reservation[] = [
     startHour: 9,
     durationHours: 1,
     addOnIds: ["ball-tube"],
+    paymentMethod: "gcash",
     status: "booked",
     paymentStatus: "paid",
     total: 380,
@@ -479,7 +495,7 @@ export function buildInitialBookingState(): BookingState {
     courts: structuredClone(courts),
     addOns: structuredClone(addOns),
     customers: structuredClone(customers),
-    reservations: structuredClone(reservations),
+    reservations: withMockPaymentReceipts(reservations),
     closures: [
       {
         id: "closure-maintenance-001",
@@ -498,4 +514,22 @@ export function buildInitialBookingState(): BookingState {
     openHour: 6,
     closeHour: 22,
   };
+}
+
+function withMockPaymentReceipts(items: Reservation[]): Reservation[] {
+  return structuredClone(items).map((reservation, index) => {
+    if (reservation.paymentStatus !== "paid") {
+      return reservation;
+    }
+
+    const sequence = reservation.id.match(/\d+$/)?.[0] ?? String(index + 1).padStart(3, "0");
+    const paymentDate = reservation.date.replaceAll("-", "");
+
+    return {
+      ...reservation,
+      invoiceNumber: reservation.invoiceNumber ?? `INV-${paymentDate}-${sequence}`,
+      paymentReference: reservation.paymentReference ?? `PAY-${paymentDate}-${sequence}`,
+      paidAt: reservation.paidAt ?? reservation.createdAt,
+    };
+  });
 }
