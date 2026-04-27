@@ -8,3 +8,4 @@ coverage/
 .next-dev*.log
 .env*.local
 .DS_Store
+resume.txt
